@@ -26,16 +26,16 @@ namespace Containers
 		bool insert(Key, Item);
 		Item* lookup(Key);
 		bool remove(Key);
-		int removeIf(RemovePredicate*);
+		int removeIf(RemovePredicate);
 
 	private:
 		KeyItemPair* _root = nullptr;
 
 		static bool insert_recursive(Key, Item, KeyItemPair* &);
-		static Item* lookup_recursive(Key, const KeyItemPair*);
+		static Item* lookup_recursive(Key, KeyItemPair*);
 		static bool remove_recursive(Key, KeyItemPair* &);
 		static void remove_pair(KeyItemPair* &);
-		static int remove_if_recursive(RemovePredicate*, KeyItemPair* &, int);
+		static int remove_if_recursive(RemovePredicate, KeyItemPair* &, int);
 		static bool is_empty(const KeyItemPair*);
 	};
 
@@ -108,7 +108,7 @@ namespace Containers
 	}
 
 	template <class K, class I>
-	typename Dictionary<K, I>::Item* Dictionary<K, I>::lookup_recursive(Key key_to_find, const KeyItemPair* current_pair)
+	typename Dictionary<K, I>::Item* Dictionary<K, I>::lookup_recursive(Key key_to_find, KeyItemPair* current_pair)
 	{
 		// end of the line, the key is absent
 		if (is_empty(current_pair))
@@ -119,7 +119,7 @@ namespace Containers
 		// found the key
 		if (current_pair->key == key_to_find)
 		{
-			return current_pair->item;
+			return &current_pair->item;
 		}
 
 		// otherwise, keep going
@@ -151,6 +151,7 @@ namespace Containers
 		if (current_pair->key == key_to_remove)
 		{
 			remove_pair(current_pair);
+			return true;
 		}
 
 		// else, keep going
@@ -177,13 +178,13 @@ namespace Containers
 	 * Returns the number of key-item pairs removed.
 	 */
 	template <class K, class I>
-	int Dictionary<K, I>::removeIf(RemovePredicate* predicate)
+	int Dictionary<K, I>::removeIf(typename Dictionary<K, I>::RemovePredicate predicate)
 	{
 		return remove_if_recursive(predicate, _root, 0);
 	}
 
 	template <class K, class I>
-	int Dictionary<K, I>::remove_if_recursive(RemovePredicate* predicate, KeyItemPair*& current_pair, int removed_counter)
+	int Dictionary<K, I>::remove_if_recursive(RemovePredicate predicate, KeyItemPair*& current_pair, int removed_counter)
 	{
 		// end of the list, so return the number of
 		// removed key-item pairs
@@ -202,7 +203,7 @@ namespace Containers
 		}
 
 		// and then go to the next...
-		return remove_if_recursive(predicate, current_pair, removed_counter);
+		return remove_if_recursive(predicate, current_pair->next_pair, removed_counter);
 	}
 
 	template <class K, class I>
