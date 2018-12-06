@@ -18,8 +18,9 @@ TEST(DictionaryInsertAndRemoveTests, WhenInsertingAndRemovingOneKeyItemPair)
 
 bool doesKeyContainRemove(Containers::Dictionary<std::string, int>::Key key)
 {
-	const std::regex containsTestRegex("(test)");
-	return std::regex_match(key, containsTestRegex);
+	const std::regex containsTestRegex("test");
+	bool isMatch = std::regex_search(key, containsTestRegex);
+	return isMatch;
 }
 
 TEST(DictionaryInsertAndRemoveTests, WhenInsertingAndRemovingIfKeyContainsTest)
