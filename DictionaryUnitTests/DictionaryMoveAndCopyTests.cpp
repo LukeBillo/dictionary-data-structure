@@ -1,5 +1,4 @@
 #include "pch.h"
-#include "gtest/gtest.h"
 #include "../Dictionary/dictionary.h"
 
 TEST(DictionaryCopyConstructorTest, WhenCopyingAnEmptyDictionary) {
@@ -9,7 +8,7 @@ TEST(DictionaryCopyConstructorTest, WhenCopyingAnEmptyDictionary) {
 	EXPECT_EQ(*emptyDictionary, *copiedDictionary);
 }
 
-TEST(DictionaryCopyConstructorTest, WhenCopyingANonEmptyDictionary) {
+/*TEST(DictionaryCopyConstructorTest, WhenCopyingANonEmptyDictionary) {
 	auto* originalDictionary = new Containers::Dictionary<std::string, int>();
 	originalDictionary->insert("Test-1", 1);
 	originalDictionary->insert("Test-2", 2);
@@ -22,9 +21,9 @@ TEST(DictionaryCopyConstructorTest, WhenCopyingANonEmptyDictionary) {
 	auto* copyAddress = copiedDictionary->lookup("Test-1");
 
 	EXPECT_NE(originalAddress, copyAddress);
-}
+}*/
 
-TEST(DictionaryMoveConstructorTest, WhenMovingANonEmptyDictionary)
+/*TEST(DictionaryMoveConstructorTest, WhenMovingANonEmptyDictionary)
 {
 	auto* dictionaryToBeMoved = new Containers::Dictionary<std::string, int>();
 	dictionaryToBeMoved->insert("Moved-1", 1);
@@ -37,4 +36,4 @@ TEST(DictionaryMoveConstructorTest, WhenMovingANonEmptyDictionary)
 
 	EXPECT_EQ(shouldNotBeFound, nullptr);
 	EXPECT_EQ(*shouldBeMovedItem, 1);
-}
+}*/

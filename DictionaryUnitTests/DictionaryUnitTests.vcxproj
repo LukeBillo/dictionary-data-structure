@@ -39,6 +39,7 @@
     <ClCompile Include="DictionaryMoveAndCopyTests.cpp" />
     <ClCompile Include="DictionaryInsertAndLookupTests.cpp" />
     <ClCompile Include="DictionaryInsertAndRemoveTests.cpp" />
+    <ClCompile Include="DictionaryOperatorTests.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -47,12 +48,12 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Dictionary\Dictionary.vcxproj">
       <Project>{514e0eaf-739a-470c-baeb-26c47d87621b}</Project>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemDefinitionGroup />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

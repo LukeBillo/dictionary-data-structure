@@ -23,7 +23,7 @@ namespace Containers
 		Dictionary(Dictionary<Key, Item>&&) noexcept;
 
 		// Default constructor and destructor
-		Dictionary() = default;
+		Dictionary();
 		~Dictionary();
 
 		/* Operator overloads */
@@ -50,25 +50,25 @@ namespace Containers
 		std::ostream& display(std::ostream&) const;
 
 	private:
-		KeyItemPair* _root = nullptr;
+		std::unique_ptr<KeyItemPair> _root;
 
 		/* Constants */
 		static const int DICTIONARY_OUTPUT_INDENTATION = 2;
 
 		/* Helper functions for internal use */
-		static int deepDelete(KeyItemPair* &);
-		static void removePair(KeyItemPair* &);
-		static bool isEmpty(const KeyItemPair*);
+		static int deepDelete(std::unique_ptr<KeyItemPair> &);
+		static void removePair(std::unique_ptr<KeyItemPair> &);
+		static bool isEmpty(const std::unique_ptr<KeyItemPair>&);
 
 		/* Recursive helper functions for internal use */
-		static Item* lookupRecursive(Key, KeyItemPair*);
-		static void displayDictionaryRecursive(std::ostream&, KeyItemPair*);
-		static bool insertRecursive(Key, Item, KeyItemPair* &);
-		static KeyItemPair* deepCopyRecursive(KeyItemPair*);
-		static int deepDeleteRecursive(KeyItemPair* &, int);
-		static bool removeRecursive(Key, KeyItemPair* &);
-		static int removeIfRecursive(RemovePredicate, KeyItemPair* &, int);
-		static bool checkIfEqualRecursive(KeyItemPair* const, KeyItemPair* const);
+		static Item* lookupRecursive(Key, std::unique_ptr<KeyItemPair>&);
+		static void displayDictionaryRecursive(std::ostream&, const std::unique_ptr<KeyItemPair>&);
+		static bool insertRecursive(Key, Item, std::unique_ptr<KeyItemPair>&);
+		static std::unique_ptr<KeyItemPair> deepCopyRecursive(const std::unique_ptr<KeyItemPair>&);
+		static int deepDeleteRecursive(std::unique_ptr<KeyItemPair>&, int);
+		static bool removeRecursive(Key, std::unique_ptr<KeyItemPair>&);
+		static int removeIfRecursive(RemovePredicate, std::unique_ptr<KeyItemPair> &, int);
+		static bool checkIfEqualRecursive(std::unique_ptr<KeyItemPair> const&, std::unique_ptr<KeyItemPair> const&);
 	};
 
 	/**
@@ -82,27 +82,15 @@ namespace Containers
 	{
 		Key key;
 		Item item;
-		KeyItemPair* nextPair;
+		std::unique_ptr<KeyItemPair> nextPair;
 
-		KeyItemPair(Key key, Item item) : key(key), item(item), nextPair(nullptr) {}
+		KeyItemPair(Key key, Item item) : key(key), item(item), nextPair(std::unique_ptr<KeyItemPair>(nullptr)) {}
 	};
 
 	template <class K, class I>
 	Dictionary<K, I>::Dictionary(const Dictionary<Key, Item>& existingDictionary)
 	{
 		this->_root = deepCopyRecursive(existingDictionary._root);
-	}
-
-	template <class K, class I>
-	typename Dictionary<K, I>::KeyItemPair* Dictionary<K, I>::deepCopyRecursive(KeyItemPair* copyPair)
-	{
-		if (isEmpty(copyPair))
-			return nullptr;
-
-		auto* copiedPair = new KeyItemPair(copyPair->key, copyPair->item);
-		copiedPair->nextPair = deepCopyRecursive(copyPair->nextPair);
-
-		return copiedPair;
 	}
 
 	template <class K, class I>
@@ -113,9 +101,13 @@ namespace Containers
 			return;
 		}
 
-		delete _root;
-		_root = moveFrom._root;
-		moveFrom._root = nullptr;
+		_root = std::move(moveFrom._root);
+	}
+
+	template <class K, class I>
+	Dictionary<K, I>::Dictionary()
+	{
+		_root = std::unique_ptr<KeyItemPair>(nullptr);
 	}
 
 	template <class K, class I>
@@ -145,10 +137,8 @@ namespace Containers
 		{
 			return *this;
 		}
-
-		delete _root;
-		_root = moveFrom._root;
-		moveFrom._root = nullptr;
+		
+		_root = std::move(moveFrom._root);
 
 		return *this;
 	}
@@ -164,13 +154,13 @@ namespace Containers
 	}
 
 	template <class K, class I>
-	bool Dictionary<K, I>::insertRecursive(Key key, Item itemToInsert, KeyItemPair* & currentPair)
+	bool Dictionary<K, I>::insertRecursive(Key key, Item itemToInsert, std::unique_ptr<KeyItemPair>& currentPair)
 	{
 		// at an empty node, so insert
 		// return true because key didn't exist
 		if (isEmpty(currentPair))
 		{
-			currentPair = new KeyItemPair(key, itemToInsert);
+			currentPair = std::make_unique<KeyItemPair>(key, itemToInsert);
 			return true;
 		}
 
@@ -186,6 +176,19 @@ namespace Containers
 		return insertRecursive(key, itemToInsert, currentPair->nextPair);
 	}
 
+	template <class K, class I>
+	std::unique_ptr<typename Dictionary<K, I>::KeyItemPair> Dictionary<K, I>::deepCopyRecursive(
+		const std::unique_ptr<KeyItemPair>& copyPair)
+	{
+		if (isEmpty(copyPair))
+			return std::unique_ptr<KeyItemPair>(nullptr);
+
+		std::unique_ptr<KeyItemPair> copiedPair = std::make_unique<KeyItemPair>(copyPair->key, copyPair->item);
+		copiedPair->nextPair = deepCopyRecursive(copyPair->nextPair);
+
+		return copiedPair;
+	}
+
 	/**
 	 * Returns a Key's corresponding Item.
 	 * If the Key isn't found, nullptr is returned.
@@ -197,7 +200,7 @@ namespace Containers
 	}
 
 	template <class K, class I>
-	typename Dictionary<K, I>::Item* Dictionary<K, I>::lookupRecursive(Key keyToFind, KeyItemPair* currentPair)
+	typename Dictionary<K, I>::Item* Dictionary<K, I>::lookupRecursive(Key keyToFind, std::unique_ptr<KeyItemPair>& currentPair)
 	{
 		// end of the line, the key is absent
 		if (isEmpty(currentPair))
@@ -220,13 +223,13 @@ namespace Containers
 	 * starting node.
 	 */
 	template <class K, class I>
-	int Dictionary<K, I>::deepDelete(KeyItemPair* & firstPair)
+	int Dictionary<K, I>::deepDelete(std::unique_ptr<KeyItemPair> & firstPair)
 	{
 		return deepDeleteRecursive(firstPair, 0);
 	}
 
 	template <class K, class I>
-	int Dictionary<K, I>::deepDeleteRecursive(KeyItemPair* & currentPair, int numDeletedPairs)
+	int Dictionary<K, I>::deepDeleteRecursive(std::unique_ptr<KeyItemPair> & currentPair, int numDeletedPairs)
 	{
 		// if no current pair, return how many were deleted
 		if (isEmpty(currentPair))
@@ -239,7 +242,6 @@ namespace Containers
 
 		// deletes non-empty pairs, starting from the last pair
 		// cascades backwards after due to recursion
-		delete currentPair;
 		currentPair = nullptr;
 
 		return numDeletedPairs;
@@ -257,7 +259,7 @@ namespace Containers
 	}
 
 	template <class K, class I>
-	bool Dictionary<K, I>::removeRecursive(Key keyToRemove, KeyItemPair* & currentPair)
+	bool Dictionary<K, I>::removeRecursive(Key keyToRemove, std::unique_ptr<KeyItemPair> & currentPair)
 	{
 		// key doesnt exist, return false to
 		// indicate no key-item pair was removed
@@ -281,14 +283,12 @@ namespace Containers
 	 * Removes the provided key-item pair if not empty.
 	 */
 	template <class K, class I>
-	void Dictionary<K, I>::removePair(KeyItemPair* & currentPair)
+	void Dictionary<K, I>::removePair(std::unique_ptr<KeyItemPair> & currentPair)
 	{
 		if (isEmpty(currentPair))
 			return;
 
-		KeyItemPair* nextPair = currentPair->nextPair;
-		delete currentPair;
-		currentPair = nextPair;
+		currentPair = std::move(currentPair->nextPair);
 	}
 
 	/**
@@ -303,7 +303,7 @@ namespace Containers
 	}
 
 	template <class K, class I>
-	int Dictionary<K, I>::removeIfRecursive(RemovePredicate predicate, KeyItemPair*& currentPair, int removedCounter)
+	int Dictionary<K, I>::removeIfRecursive(RemovePredicate predicate, std::unique_ptr<KeyItemPair>& currentPair, int removedCounter)
 	{
 		// end of the list, so return the number of
 		// removed key-item pairs
@@ -330,9 +330,9 @@ namespace Containers
 	}
 
 	template <class K, class I>
-	bool Dictionary<K, I>::isEmpty(const KeyItemPair* pair)
+	bool Dictionary<K, I>::isEmpty(const std::unique_ptr<KeyItemPair>& pair)
 	{
-		return pair == nullptr;
+		return !pair;
 	}
 
 	/**
@@ -359,7 +359,7 @@ namespace Containers
 	}
 
 	template <class K, class I>
-	void Dictionary<K, I>::displayDictionaryRecursive(std::ostream& os, KeyItemPair* currentPair)
+	void Dictionary<K, I>::displayDictionaryRecursive(std::ostream& os, const std::unique_ptr<KeyItemPair>& currentPair)
 	{
 		if (isEmpty(currentPair))
 		{
@@ -377,30 +377,14 @@ namespace Containers
 		displayDictionaryRecursive(os, currentPair->nextPair);
 	}
 
-	/**
-	 * Assumes that types K and I both
-	 * have overloads for operator<<.
-	 */
-	template<class K, class I>
-	std::ostream & operator<<(std::ostream & os, const Dictionary<K, I>& outputDictionary)
-	{
-		return outputDictionary.display(os);
-	}
-
-	template<class K, class I>
-	bool operator==(Dictionary<K, I> const& lhs, Dictionary<K, I> const& rhs)
-	{
-		return Dictionary<K, I>::checkIfEqualRecursive(lhs._root, rhs._root);
-	}
-
 	template <class K, class I>
-	bool Dictionary<K, I>::checkIfEqualRecursive(KeyItemPair* const lhsPair, KeyItemPair* const rhsPair)
+	bool Dictionary<K, I>::checkIfEqualRecursive(std::unique_ptr<KeyItemPair> const& lhsPair, std::unique_ptr<KeyItemPair> const& rhsPair)
 	{
 		/**
-		 * If either pair is nullptr, check if both are nullptr.
-		 * Ensures dictionary length (i.e. number of 
-		 * KeyItemPairs is the same.)
-		 */
+		* If either pair is nullptr, check if both are nullptr.
+		* Ensures dictionary length (i.e. number of
+		* KeyItemPairs is the same.)
+		*/
 		if (isEmpty(lhsPair) || isEmpty(rhsPair))
 		{
 			return isEmpty(lhsPair) && isEmpty(rhsPair);
@@ -420,5 +404,21 @@ namespace Containers
 
 		// and then check the next pair
 		return checkIfEqualRecursive(lhsPair->nextPair, rhsPair->nextPair);
+	}
+
+	/**
+	 * Assumes that types K and I both
+	 * have overloads for operator<<.
+	 */
+	template<class K, class I>
+	std::ostream & operator<<(std::ostream & os, const Dictionary<K, I>& outputDictionary)
+	{
+		return outputDictionary.display(os);
+	}
+
+	template<class K, class I>
+	bool operator==(Dictionary<K, I> const& lhs, Dictionary<K, I> const& rhs)
+	{
+		return Dictionary<K, I>::checkIfEqualRecursive(lhs._root, rhs._root);
 	}
 }
